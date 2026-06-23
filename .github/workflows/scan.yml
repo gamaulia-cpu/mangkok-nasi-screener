@@ -1,15 +1,10 @@
 name: Mangkuk Nasi Screener
 on:
-  workflow_dispatch:
-    inputs:
-      logLevel:
-        description: "Log level"
-        required: false
-        default: "info"
-  schedule:
-    - cron: "30 10 * * 1-5"
   push:
     branches: [main]
+  schedule:
+    - cron: "30 10 * * 1-5"
+  workflow_dispatch:
 
 jobs:
   screen:
@@ -21,7 +16,6 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - run: python screener.py stocks.txt
       - run: python screener.py stocks.txt --all --csv hasil_screener.csv
       - uses: actions/upload-artifact@v4
         with:
@@ -30,15 +24,15 @@ jobs:
       - name: Generate Report
         run: |
           python3 << 'PYEOF'
-import csv, subprocess
+import csv, datetime
 rows = []
 with open('hasil_screener.csv') as f:
     for r in csv.DictReader(f):
         rows.append(r)
 perfect = [r for r in rows if int(r['score']) == 65]
+now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M WIB')
 md = '# Mangkuk Nasi Screener Report\n\n'
-tanggal = subprocess.getoutput("date '+%Y-%m-%d %H:%M WIB'")
-md += f'**Tanggal:** {tanggal}\n\n'
+md += f'**Tanggal:** {now}\n\n'
 md += f'**Total saham discan:** {len(rows)}\n\n'
 md += '## Sinyal 65/65\n\n'
 if perfect:
