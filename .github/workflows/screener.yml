@@ -1,6 +1,11 @@
 name: Mangkuk Nasi Screener
 on:
-  workflow_dispatch: null
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: "Log level"
+        required: false
+        default: "info"
   schedule:
     - cron: "30 10 * * 1-5"
   push:
