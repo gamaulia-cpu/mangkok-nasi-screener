@@ -1,4 +1,4 @@
-name: Screener
+name: Mangkuk Nasi Screener
 on:
   workflow_dispatch:
 jobs:
