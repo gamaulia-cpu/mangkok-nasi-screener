@@ -1,7 +1,5 @@
 name: Mangkuk Nasi Screener
-on:
-  workflow_dispatch:
-  push
+on: workflow_dispatch
 
 jobs:
   screen:
