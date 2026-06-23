@@ -1,7 +1,6 @@
 name: Mangkuk Nasi Screener
-
 on:
-  workflow_dispatch:
+  workflow_dispatch: null
   schedule:
     - cron: "30 10 * * 1-5"
   push:
@@ -10,54 +9,47 @@ on:
 jobs:
   screen:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-
       - run: pip install -r requirements.txt
-
       - run: python screener.py stocks.txt
-
       - run: python screener.py stocks.txt --all --csv hasil_screener.csv
-
       - uses: actions/upload-artifact@v4
         with:
           name: hasil-screener
           path: hasil_screener.csv
-
-      - name: Generate Markdown Report
-        run: python3 -c "
-import csv
+      - name: Generate Report
+        run: |
+          python3 << 'PYEOF'
+import csv, subprocess
 rows = []
 with open('hasil_screener.csv') as f:
     for r in csv.DictReader(f):
         rows.append(r)
 perfect = [r for r in rows if int(r['score']) == 65]
 md = '# Mangkuk Nasi Screener Report\n\n'
-import subprocess
-md += '**Tanggal:** ' + subprocess.getoutput(\"date '+%Y-%m-%d %H:%M WIB'\") + '\n\n'
-md += '**Total saham discan:** ' + str(len(rows)) + '\n\n'
+tanggal = subprocess.getoutput("date '+%Y-%m-%d %H:%M WIB'")
+md += f'**Tanggal:** {tanggal}\n\n'
+md += f'**Total saham discan:** {len(rows)}\n\n'
 md += '## Sinyal 65/65\n\n'
 if perfect:
     md += '| Symbol | Close | Volume | Fase |\n|--------|-------|--------|------|\n'
     for r in perfect:
-        md += f\"| {r['symbol']} | {r['close']} | {r['volume']} | {r['fase']} |\\n\"
+        md += f"| {r['symbol']} | {r['close']} | {r['volume']} | {r['fase']} |\n"
 else:
     md += 'Tidak ada sinyal 65/65.\n\n'
 md += '## Semua Score\n\n'
 md += '| Symbol | Score | Fase | Bowl | Trend | Vol Contract | Spring |\n'
 md += '|--------|-------|------|------|-------|-------------|--------|\n'
 for r in rows:
-    md += f\"| {r['symbol']} | {r['score']} | {r['fase']} | {r['bowl']} | {r['trend_ok']} | {r['vol_contract']} | {r['spring']} |\\n\"
+    md += f"| {r['symbol']} | {r['score']} | {r['fase']} | {r['bowl']} | {r['trend_ok']} | {r['vol_contract']} | {r['spring']} |\n"
 with open('report.md', 'w') as f:
     f.write(md)
-"
-
+PYEOF
       - uses: actions/upload-artifact@v4
         with:
           name: report
