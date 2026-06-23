@@ -157,6 +157,26 @@ def screen_stock(symbol: str) -> dict | None:
     return comp
 
 
+def fetch_all_idx_symbols() -> list[str]:
+    """Fetch all IDX stock symbols from Hugging Face dataset."""
+    import requests as _req
+    url = "https://huggingface.co/datasets/rifkyaziz/idx-stock-ticker/raw/main/IDX-stock-ticker.csv"
+    try:
+        r = _req.get(url, timeout=15)
+        if r.status_code == 200:
+            lines = r.text.strip().split("\n")
+            symbols, seen = [], set()
+            for line in lines[1:]:
+                sym = line.split(",")[0].strip()
+                if sym and sym not in seen:
+                    symbols.append(f"{sym}.JK")
+                    seen.add(sym)
+            return symbols
+    except Exception:
+        pass
+    return []
+
+
 def load_stock_list(path: str) -> list[str]:
     """Load daftar saham dari file (1 symbol per baris, # untuk komentar)."""
     symbols = []
@@ -239,6 +259,11 @@ def main():
         help="Simpan hasil ke file CSV",
     )
     parser.add_argument(
+        "--all-idx",
+        action="store_true",
+        help="Scan semua saham IDX (~1001 tickers) via online source",
+    )
+    parser.add_argument(
         "--single",
         type=str,
         default=None,
@@ -248,6 +273,12 @@ def main():
 
     if args.single:
         symbols = [args.single]
+    elif args.all_idx:
+        symbols = fetch_all_idx_symbols()
+        if not symbols:
+            print("Gagal mengambil daftar saham dari sumber online.")
+            print("Gunakan file stocks.txt sebagai fallback.")
+            sys.exit(1)
     else:
         if not os.path.exists(args.stocks_file):
             print(f"File tidak ditemukan: {args.stocks_file}")
