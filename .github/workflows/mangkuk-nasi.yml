@@ -21,8 +21,7 @@ jobs:
         with:
           name: hasil-screener
           path: hasil_screener.csv
-      - name: Generate Report
-        run: python3 -c "print('test')"
+      - run: python report.py hasil_screener.csv
       - uses: actions/upload-artifact@v4
         with:
           name: report
