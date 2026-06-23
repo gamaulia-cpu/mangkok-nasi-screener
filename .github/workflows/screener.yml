@@ -4,7 +4,12 @@ on:
   schedule:
     # Setiap hari Senin-Jumat jam 17:30 WIB (10:30 UTC) setelah bursa tutup
     - cron: "30 10 * * 1-5"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Trigger reason"
+        required: false
+        default: "manual"
   push:
     branches: [main]
 
