@@ -1,15 +1,9 @@
 name: Mangkuk Nasi Screener
 
 on:
-  schedule:
-    # Setiap hari Senin-Jumat jam 17:30 WIB (10:30 UTC) setelah bursa tutup
-    - cron: "30 10 * * 1-5"
   workflow_dispatch:
-    inputs:
-      reason:
-        description: "Trigger reason"
-        required: false
-        default: "manual"
+  schedule:
+    - cron: "30 10 * * 1-5"
   push:
     branches: [main]
 
@@ -18,74 +12,53 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt
 
-      - name: Run screener (perfect signals only)
-        run: python screener.py stocks.txt
+      - run: python screener.py stocks.txt
 
-      - name: Run screener (all scores) + save CSV
-        run: |
-          python screener.py stocks.txt --all --csv hasil_screener.csv
+      - run: python screener.py stocks.txt --all --csv hasil_screener.csv
 
-      - name: Upload CSV artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: hasil-screener
           path: hasil_screener.csv
 
       - name: Generate Markdown Report
-        run: |
-          python -c "
-import json, csv
-
+        run: python3 -c "
+import csv
 rows = []
 with open('hasil_screener.csv') as f:
-    reader = csv.DictReader(f)
-    for r in reader:
+    for r in csv.DictReader(f):
         rows.append(r)
-
 perfect = [r for r in rows if int(r['score']) == 65]
-total = len(rows)
-
-md = f'''# Mangkuk Nasi Screener Report
-
-**Tanggal:** $(date '+%Y-%m-%d %H:%M WIB')
-
-**Total saham discan:** {total}
-
-## Sinyal 65/65
-
-'''
-
+md = '# Mangkuk Nasi Screener Report\n\n'
+import subprocess
+md += '**Tanggal:** ' + subprocess.getoutput(\"date '+%Y-%m-%d %H:%M WIB'\") + '\n\n'
+md += '**Total saham discan:** ' + str(len(rows)) + '\n\n'
+md += '## Sinyal 65/65\n\n'
 if perfect:
     md += '| Symbol | Close | Volume | Fase |\n|--------|-------|--------|------|\n'
     for r in perfect:
         md += f\"| {r['symbol']} | {r['close']} | {r['volume']} | {r['fase']} |\\n\"
 else:
-    md += 'Tidak ada sinyal 65/65.\\n\\n'
-
-md += '## Semua Score\\n\\n'
-md += '| Symbol | Score | Fase | Bowl | Trend | Vol Contract | Spring |\\n'
-md += '|--------|-------|------|------|-------|-------------|--------|\\n'
+    md += 'Tidak ada sinyal 65/65.\n\n'
+md += '## Semua Score\n\n'
+md += '| Symbol | Score | Fase | Bowl | Trend | Vol Contract | Spring |\n'
+md += '|--------|-------|------|------|-------|-------------|--------|\n'
 for r in rows:
     md += f\"| {r['symbol']} | {r['score']} | {r['fase']} | {r['bowl']} | {r['trend_ok']} | {r['vol_contract']} | {r['spring']} |\\n\"
-
 with open('report.md', 'w') as f:
     f.write(md)
 "
 
-      - name: Upload Markdown Report
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: report
           path: report.md
